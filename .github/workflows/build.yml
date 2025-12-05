@@ -72,6 +72,6 @@ jobs:
       # -----------------------------
       # Run example binary
       # -----------------------------
-      - name: Run example (5 seconds)
+      - name: Run example (20 seconds)
         run: |
-          timeout 5s ./build/mq_monotonic_example || true
+          timeout 20s ./build/mq_monotonic_example || true
