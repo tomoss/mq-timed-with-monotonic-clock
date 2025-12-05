@@ -5,12 +5,13 @@
 #include <cerrno>
 #include <climits>
 #include <poll.h>
+
 namespace mq_monotonic {
 
 // Time conversion constants
-constexpr long      NANOS_PER_SEC       = 1'000'000'000L;
-constexpr long long MILLIS_PER_SEC      = 1'000LL;
-constexpr long long NANOS_PER_MILLI     = 1'000'000LL;
+constexpr long      NANOS_PER_SEC       = 1000000000L;
+constexpr long long MILLIS_PER_SEC      = 1000LL;
+constexpr long long NANOS_PER_MILLI     = 1000000LL;
 
 
 // Validates the structure of a timespec, not whether the deadline is in the future.

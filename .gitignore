@@ -1,32 +1,52 @@
-# Prerequisites
-*.d
+# -------------------------------
+# Build directories
+# -------------------------------
+build/
+build-*/
+out/
+bin/
+lib/
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+*.cmake.in
+*.ninja
+*.ninja_deps
+*.ninja_log
 
-# Precompiled Headers
-*.gch
-*.pch
+# Compilation database (optional)
+compile_commands.json
 
-# Compiled Dynamic libraries
+# Debug / Profile artifacts
+*.out
+*.exe
+*.a
 *.so
 *.dylib
 *.dll
+*.pdb
+*.obj
 
-# Fortran module files
-*.mod
-*.smod
+# VSCode workspace settings
+.vscode/
+.vs/
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# macOS files (safe to ignore even on Linux/Windows)
+.DS_Store
 
-# Executables
-*.exe
-*.out
-*.app
+# Temporary editor files
+*.swp
+*.swo
+*.tmp
+*~
+
+# Logs
+*.log
+
+# -------------------------------
+# vcpkg (global install should live OUTSIDE the project)
+# -------------------------------
+vcpkg/
