@@ -39,7 +39,7 @@ void client_thread()
 
     while(running)
     {
-        ssize_t ret = mq_timedreceive_monotonic(mqd, buffer, MAX_MSG_SIZE, NULL, &mq_timeout);
+        ssize_t ret = mq_monotonic::mq_timedreceive_monotonic(mqd, buffer, MAX_MSG_SIZE, NULL, &mq_timeout);
 
         if(ret < 0)
         {
@@ -86,7 +86,7 @@ int main(int, char**)
     {
         clock_gettime(CLOCK_MONOTONIC, &mq_timeout);
         mq_timeout.tv_sec += timeout;
-        int ret = mq_timedsend_monotonic(mqd, "HELLO", 6, 10, &mq_timeout);
+        int ret = mq_monotonic::mq_timedsend_monotonic(mqd, "HELLO", 6, 10, &mq_timeout);
         if(ret < 0)
         {
             std::cout << "MQ timedsend error: " << strerror(errno) << "\n"; 
