@@ -14,4 +14,4 @@ mq_timedsend_monotonic
 ```
 that accept as timeout parameter **CLOCK_MONOTONIC**. 
 
-Implementation was done using linux API poll()
+Implementation was done using linux API ```poll()```
