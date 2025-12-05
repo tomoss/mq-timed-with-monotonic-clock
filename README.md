@@ -1,6 +1,6 @@
 ### POSIX Message Queue functions that accept timeout of type CLOCK_MONOTONIC
 
-[![C++11](https://img.shields.io/badge/dialect-C%2B%2B14-blue)](https://en.cppreference.com/w/cpp/11)
+[![C++11](https://img.shields.io/badge/dialect-C%2B%2B11-blue)](https://en.cppreference.com/w/cpp/11)
 
 [![CI: GCC + Clang](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml/badge.svg)](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml)
 
