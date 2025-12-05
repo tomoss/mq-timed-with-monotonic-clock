@@ -2,42 +2,42 @@
 #define MQ_MONOTONIC_H
 
 #include <mqueue.h>
+#include <poll.h>
+
 #include <cerrno>
 #include <climits>
-#include <poll.h>
 
 namespace mq_monotonic {
 
 // Time conversion constants
-constexpr long      NANOS_PER_SEC       = 1000000000L;
-constexpr long long MILLIS_PER_SEC      = 1000LL;
-constexpr long long NANOS_PER_MILLI     = 1000000LL;
+constexpr long NANOS_PER_SEC = 1000000000L;
+constexpr long long MILLIS_PER_SEC = 1000LL;
+constexpr long long NANOS_PER_MILLI = 1000000LL;
 
+// Validates the structure of a timespec, not whether the deadline is in the
+// future.
+static bool is_timetout_valid(const struct timespec* abs_timeout) {
+  if (abs_timeout == nullptr) {
+    return false;
+  }
 
-// Validates the structure of a timespec, not whether the deadline is in the future.
-static bool is_timetout_valid(const struct timespec* abs_timeout)
-{
-    if (abs_timeout == nullptr) {
-        return false;
-    }
+  if (abs_timeout->tv_sec < 0) {
+    return false;
+  }
 
-    if (abs_timeout->tv_sec < 0) {
-        return false;
-    }
+  if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= NANOS_PER_SEC) {
+    return false;
+  }
 
-    if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= NANOS_PER_SEC) {
-        return false;
-    }
-
-    return true;
+  return true;
 }
 
 // Computes (abs_timeout - time_current) in milliseconds.
 // Returns:
 //    ms > 0  → amount of time to wait
 //    ms == 0 → deadline has expired (or is exactly now)
-static int calculate_delta_time_ms(const struct timespec& abs_timeout, const struct timespec& time_current) {
-  
+static int calculate_delta_time_ms(const struct timespec& abs_timeout,
+                                   const struct timespec& time_current) {
   long sec = abs_timeout.tv_sec - time_current.tv_sec;
   long nsec = abs_timeout.tv_nsec - time_current.tv_nsec;
 
@@ -63,8 +63,9 @@ static int calculate_delta_time_ms(const struct timespec& abs_timeout, const str
   return static_cast<int>(ms);
 }
 
-static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec* abs_timeout) {
-
+static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
+                                         size_t msg_len, unsigned int* msg_prio,
+                                         const struct timespec* abs_timeout) {
   if (!is_timetout_valid(abs_timeout)) {
     errno = EINVAL;
     return -1;
@@ -74,7 +75,7 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char *msg_ptr, size_t msg_
   struct timespec zero_timeout = {0, 0};
   ssize_t ret;
 
-  while(true) {
+  while (true) {
     errno = 0;
     ret = mq_timedreceive(mqdes, msg_ptr, msg_len, msg_prio, &zero_timeout);
 
@@ -85,12 +86,12 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char *msg_ptr, size_t msg_
 
     // If it's a real error (like invalid buffer), return immediately.
     if (errno != ETIMEDOUT && errno != EAGAIN) {
-        return -1;
+      return -1;
     }
 
     struct timespec time_current = {0, 0};
     if (clock_gettime(CLOCK_MONOTONIC, &time_current) != 0) {
-            return -1; // clock_gettime failure
+      return -1;  // clock_gettime failure
     }
 
     int delta_ms = calculate_delta_time_ms(*abs_timeout, time_current);
@@ -101,12 +102,12 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char *msg_ptr, size_t msg_
 
     struct pollfd fdset[1];
     fdset[0].fd = static_cast<int>(mqdes);
-    fdset[0].events  = POLLIN;
+    fdset[0].events = POLLIN;
     fdset[0].revents = 0;
 
     int rc;
     do {
-        rc = poll(fdset, 1, delta_ms);
+      rc = poll(fdset, 1, delta_ms);
     } while (rc < 0 && errno == EINTR);
 
     if (rc < 0) {
@@ -122,7 +123,9 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char *msg_ptr, size_t msg_
   }
 }
 
-static int mq_timedsend_monotonic(mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned msg_prio, const struct timespec *abs_timeout) {
+static int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
+                                  size_t msg_len, unsigned msg_prio,
+                                  const struct timespec* abs_timeout) {
   if (!is_timetout_valid(abs_timeout)) {
     errno = EINVAL;
     return -1;
@@ -143,12 +146,12 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char *msg_ptr, size_t msg_l
 
     // If it's a real error (like invalid buffer), return immediately.
     if (errno != ETIMEDOUT && errno != EAGAIN) {
-        return -1;
+      return -1;
     }
 
     struct timespec time_current = {0, 0};
     if (clock_gettime(CLOCK_MONOTONIC, &time_current) != 0) {
-            return -1; // clock_gettime failure
+      return -1;  // clock_gettime failure
     }
 
     int delta_ms = calculate_delta_time_ms(*abs_timeout, time_current);
@@ -159,12 +162,12 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char *msg_ptr, size_t msg_l
 
     struct pollfd fdset[1];
     fdset[0].fd = static_cast<int>(mqdes);
-    fdset[0].events  = POLLOUT;
+    fdset[0].events = POLLOUT;
     fdset[0].revents = 0;
 
     int rc;
     do {
-        rc = poll(fdset, 1, delta_ms);
+      rc = poll(fdset, 1, delta_ms);
     } while (rc < 0 && errno == EINTR);
 
     if (rc < 0) {
@@ -180,7 +183,6 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char *msg_ptr, size_t msg_l
   }
 }
 
-} // namespace mq_monotonic
+}  // namespace mq_monotonic
 
-#endif // MQ_MONOTONIC_H
-
+#endif  // MQ_MONOTONIC_H
