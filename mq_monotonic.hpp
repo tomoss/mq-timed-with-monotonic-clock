@@ -5,8 +5,13 @@
 #include <cerrno>
 #include <climits>
 #include <poll.h>
-
 namespace mq_monotonic {
+
+// Time conversion constants
+constexpr long      NANOS_PER_SEC       = 1'000'000'000L;
+constexpr long long MILLIS_PER_SEC      = 1'000LL;
+constexpr long long NANOS_PER_MILLI     = 1'000'000LL;
+
 
 // Validates the structure of a timespec, not whether the deadline is in the future.
 static bool is_timetout_valid(const struct timespec* abs_timeout)
@@ -19,7 +24,7 @@ static bool is_timetout_valid(const struct timespec* abs_timeout)
         return false;
     }
 
-    if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= 1000000000L) {
+    if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= NANOS_PER_SEC) {
         return false;
     }
 
@@ -38,7 +43,7 @@ static int calculate_delta_time_ms(const struct timespec& abs_timeout, const str
   // Normalize: ensure 0 <= nsec < 1e9
   if (nsec < 0) {
     sec -= 1;
-    nsec += 1000000000L;
+    nsec += NANOS_PER_SEC;
   }
 
   // If resulting seconds are negative → deadline already expired.
@@ -46,7 +51,7 @@ static int calculate_delta_time_ms(const struct timespec& abs_timeout, const str
     return 0;
   }
 
-  long long ms = sec * 1000LL + nsec / 1000000LL;
+  long long ms = sec * MILLIS_PER_SEC + nsec / NANOS_PER_MILLI;
 
   if (ms < 0) {
     ms = 0;
@@ -93,7 +98,7 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char *msg_ptr, size_t msg_
       return -1;
     }
 
-    struct pollfd fdset[1] = {0};
+    struct pollfd fdset[1];
     fdset[0].fd = static_cast<int>(mqdes);
     fdset[0].events  = POLLIN;
     fdset[0].revents = 0;
@@ -151,7 +156,7 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char *msg_ptr, size_t msg_l
       return -1;
     }
 
-    struct pollfd fdset[1] = {0};
+    struct pollfd fdset[1];
     fdset[0].fd = static_cast<int>(mqdes);
     fdset[0].events  = POLLOUT;
     fdset[0].revents = 0;
