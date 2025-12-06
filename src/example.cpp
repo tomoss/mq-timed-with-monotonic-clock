@@ -2,7 +2,6 @@
 #include <mqueue.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
 #include <atomic>
 #include <cerrno>
 #include <chrono>
@@ -14,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <array>
 
 #include "mq_monotonic.hpp"
 
@@ -78,14 +78,14 @@ void consumer_thread() {
   }
 
   timespec mq_timeout;
-  char buffer[MAX_MSG_SIZE + 1];  // +1 for safety null terminator
+  std::array<char, MAX_MSG_SIZE + 1> buffer; // +1 for safety null terminator
 
   while (running.load()) {
     mq_timeout = deadline_after_seconds(TIMEOUT);
     std::cout << printMonotonic() << " Waiting data with timeout: " << TIMEOUT
               << "\n";
     ssize_t ret = mq_monotonic::mq_timedreceive_monotonic(
-        mqd, buffer, MAX_MSG_SIZE, NULL, &mq_timeout);
+        mqd, buffer.data(), buffer.size(), NULL, &mq_timeout);
 
     if (ret < 0) {
       std::cout << printMonotonic()
@@ -93,7 +93,7 @@ void consumer_thread() {
                 << "\n";
     } else {
       buffer[ret] = '\0';  // Manually null-terminate the received data
-      std::cout << printMonotonic() << " MQ timedreceive data: " << buffer
+      std::cout << printMonotonic() << " MQ timedreceive data: " << buffer.data()
                 << "\n";
     }
   }
