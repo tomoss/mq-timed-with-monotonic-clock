@@ -16,7 +16,7 @@ constexpr long long NANOS_PER_MILLI = 1000000LL;
 
 // Validates the structure of a timespec, not whether the deadline is in the
 // future.
-static bool is_timetout_valid(const struct timespec* abs_timeout) {
+static bool is_timetout_valid(const timespec* abs_timeout) {
   if (abs_timeout == nullptr) {
     return false;
   }
@@ -36,8 +36,8 @@ static bool is_timetout_valid(const struct timespec* abs_timeout) {
 // Returns:
 //    ms > 0  → amount of time to wait
 //    ms == 0 → deadline has expired (or is exactly now)
-static int calculate_delta_time_ms(const struct timespec& abs_timeout,
-                                   const struct timespec& time_current) {
+static int calculate_delta_time_ms(const timespec& abs_timeout,
+                                   const timespec& time_current) {
   long sec = abs_timeout.tv_sec - time_current.tv_sec;
   long nsec = abs_timeout.tv_nsec - time_current.tv_nsec;
 
@@ -72,7 +72,7 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
   }
 
   // Non-blocking probe using zero timeout.
-  struct timespec zero_timeout = {0, 0};
+  timespec zero_timeout = {0, 0};
   ssize_t ret;
 
   while (true) {
@@ -89,7 +89,7 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
       return -1;
     }
 
-    struct timespec time_current = {0, 0};
+    timespec time_current = {0, 0};
     if (clock_gettime(CLOCK_MONOTONIC, &time_current) != 0) {
       return -1;  // clock_gettime failure
     }
@@ -100,7 +100,7 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
       return -1;
     }
 
-    struct pollfd fdset[1];
+    pollfd fdset[1];
     fdset[0].fd = static_cast<int>(mqdes);
     fdset[0].events = POLLIN;
     fdset[0].revents = 0;
@@ -132,7 +132,7 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
   }
 
   // Non-blocking probe using zero timeout.
-  struct timespec zero_timeout = {0, 0};
+  timespec zero_timeout = {0, 0};
   ssize_t ret;
 
   while (true) {
@@ -149,7 +149,7 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
       return -1;
     }
 
-    struct timespec time_current = {0, 0};
+    timespec time_current = {0, 0};
     if (clock_gettime(CLOCK_MONOTONIC, &time_current) != 0) {
       return -1;  // clock_gettime failure
     }
@@ -160,7 +160,7 @@ static int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
       return -1;
     }
 
-    struct pollfd fdset[1];
+    pollfd fdset[1];
     fdset[0].fd = static_cast<int>(mqdes);
     fdset[0].events = POLLOUT;
     fdset[0].revents = 0;
