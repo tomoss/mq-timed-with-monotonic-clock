@@ -1,0 +1,77 @@
+name: Linux Build CI
+
+on:
+  push:
+    branches: [ "main"]
+  pull_request:
+    branches: [ "main"]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+        fail-fast: false
+
+        matrix:
+            include:
+            # --- Linux x64 ---
+            - os: ubuntu-latest
+              build_type: Release
+              compiler: { c: gcc, cpp: g++ }
+
+            - os: ubuntu-latest
+              build_type: Release
+              compiler: { c: clang, cpp: clang++ }
+
+            # --- Linux ARM ---
+            - os: ubuntu-24.04-arm
+              build_type: Release
+              compiler: { c: gcc, cpp: g++ }
+
+            - os: ubuntu-24.04-arm
+              build_type: Release
+              compiler: { c: clang, cpp: clang++ }
+        
+    steps:
+      # -----------------------------
+      # Checkout repository
+      # -----------------------------
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+    
+      # -----------------------------
+      # Install dependencies
+      # -----------------------------
+      - name: Install Ninja and build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      # -----------------------------
+      # Configure
+      # -----------------------------
+      - name: Configure CMake
+        if: startsWith(matrix.os, 'ubuntu')
+        run: >
+          cmake -B build -G Ninja \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} \
+          -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DBUILD_EXAMPLE=ON \
+          -S ${{ github.workspace }}
+
+      # -----------------------------
+      # Build
+      # -----------------------------
+      - name: Build project
+        run: |
+          cmake --build build --config ${{ matrix.build_type }}
+
+      # -----------------------------
+      # Run example binary
+      # -----------------------------
+      - name: Run example (20 seconds)
+        run: |
+          timeout 20s ./build/mq_monotonic_example || true
