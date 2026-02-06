@@ -68,10 +68,3 @@ jobs:
       - name: Build project
         run: |
           cmake --build build --config ${{ matrix.build_type }}
-
-      # -----------------------------
-      # Run example binary
-      # -----------------------------
-      - name: Run example (20 seconds)
-        run: |
-          timeout 20s ./build/mq_monotonic_example || true
