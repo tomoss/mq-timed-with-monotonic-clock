@@ -3,6 +3,7 @@
 
 #include <mqueue.h>
 #include <poll.h>
+
 #include <cerrno>
 #include <climits>
 #include <ctime>
@@ -16,7 +17,7 @@ constexpr long long NANOS_PER_MILLI = 1000000LL;
 
 // Validates the structure of a timespec, not whether the deadline is in the
 // future.
-static bool is_timetout_valid(const timespec* abs_timeout) {
+inline bool is_timetout_valid(const timespec* abs_timeout) {
   if (abs_timeout == nullptr) {
     return false;
   }
@@ -36,7 +37,7 @@ static bool is_timetout_valid(const timespec* abs_timeout) {
 // Returns:
 //    ms > 0  → amount of time to wait
 //    ms == 0 → deadline has expired (or is exactly now)
-static int calculate_delta_time_ms(const timespec& abs_timeout,
+inline int calculate_delta_time_ms(const timespec& abs_timeout,
                                    const timespec& time_current) {
   long sec = abs_timeout.tv_sec - time_current.tv_sec;
   long nsec = abs_timeout.tv_nsec - time_current.tv_nsec;
@@ -63,7 +64,7 @@ static int calculate_delta_time_ms(const timespec& abs_timeout,
   return static_cast<int>(ms);
 }
 
-static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
+inline ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
                                          size_t msg_len, unsigned int* msg_prio,
                                          const struct timespec* abs_timeout) {
   if (!is_timetout_valid(abs_timeout)) {
@@ -123,7 +124,7 @@ static ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
   }
 }
 
-static int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
+inline int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
                                   size_t msg_len, unsigned msg_prio,
                                   const struct timespec* abs_timeout) {
   if (!is_timetout_valid(abs_timeout)) {
