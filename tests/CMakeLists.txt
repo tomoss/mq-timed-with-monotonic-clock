@@ -3,6 +3,7 @@ find_package(Boost REQUIRED)
 add_executable(mq_monotonic_tests
     test_main.cpp
     test_helpers.cpp
+    test_mq_ops.cpp
 )
 
 target_link_libraries(mq_monotonic_tests
