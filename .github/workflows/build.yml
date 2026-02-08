@@ -1,4 +1,4 @@
-name: Linux Build CI
+name: Linux CI
 
 on:
   push:
@@ -17,20 +17,20 @@ jobs:
             include:
             # --- Linux x64 ---
             - os: ubuntu-latest
-              build_type: Release
+              build_type: Debug
               compiler: { c: gcc, cpp: g++ }
 
             - os: ubuntu-latest
-              build_type: Release
+              build_type: Debug
               compiler: { c: clang, cpp: clang++ }
 
             # --- Linux ARM ---
             - os: ubuntu-24.04-arm
-              build_type: Release
+              build_type: Debug
               compiler: { c: gcc, cpp: g++ }
 
             - os: ubuntu-24.04-arm
-              build_type: Release
+              build_type: Debug
               compiler: { c: clang, cpp: clang++ }
         
     steps:
@@ -44,23 +44,26 @@ jobs:
       # -----------------------------
       # Install dependencies
       # -----------------------------
-      - name: Install Ninja and build dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y \
+            ninja-build \
+            cmake \
+            build-essential \
+            libboost-dev
 
       # -----------------------------
       # Configure
       # -----------------------------
       - name: Configure CMake
-        if: startsWith(matrix.os, 'ubuntu')
         run: >
-          cmake -B build -G Ninja \
-          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} \
-          -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DBUILD_EXAMPLE=ON \
-          -S ${{ github.workspace }}
+          cmake -S ${{ github.workspace }} -B build -G Ninja
+          -DCMAKE_C_COMPILER=${{ matrix.compiler.c }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DBUILD_EXAMPLE=ON
+          -DBUILD_TESTS=ON
 
       # -----------------------------
       # Build
@@ -68,3 +71,10 @@ jobs:
       - name: Build project
         run: |
           cmake --build build --config ${{ matrix.build_type }}
+
+      # -----------------------------
+      # Run tests
+      # -----------------------------
+      - name: Run tests
+        run: |
+          ctest --test-dir build --output-on-failure

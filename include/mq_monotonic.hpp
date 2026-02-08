@@ -76,7 +76,7 @@ inline ssize_t mq_timedreceive_monotonic(mqd_t mqdes, char* msg_ptr,
   timespec zero_timeout = {0, 0};
   ssize_t ret;
 
-  while (true) {
+  for (;;) {
     errno = 0;
     ret = mq_timedreceive(mqdes, msg_ptr, msg_len, msg_prio, &zero_timeout);
 
@@ -136,7 +136,7 @@ inline int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr,
   timespec zero_timeout = {0, 0};
   ssize_t ret;
 
-  while (true) {
+  for (;;) {
     errno = 0;
     ret = mq_timedsend(mqdes, msg_ptr, msg_len, msg_prio, &zero_timeout);
 

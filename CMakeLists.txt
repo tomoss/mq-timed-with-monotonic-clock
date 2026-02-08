@@ -16,10 +16,17 @@ if(UNIX AND NOT APPLE)
 endif()
 
 option(BUILD_EXAMPLE "Build example program" ON)
+option(BUILD_TESTS "Build unit tests" ON)
 
 if(BUILD_EXAMPLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/example.cpp")
     add_executable(mq_monotonic_example src/example.cpp)
     target_link_libraries(mq_monotonic_example PRIVATE mq_monotonic)
+endif()
+
+if(BUILD_TESTS)
+    include(CTest)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 include(GNUInstallDirs)
