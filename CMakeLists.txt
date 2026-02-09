@@ -9,7 +9,7 @@ target_include_directories(mq_monotonic INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_features(mq_monotonic INTERFACE cxx_std_11)
+target_compile_features(mq_monotonic INTERFACE cxx_std_17)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(mq_monotonic INTERFACE rt)

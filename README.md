@@ -1,6 +1,6 @@
 ### POSIX Message Queue functions that accept timeout of type CLOCK_MONOTONIC
 
-[![C++11](https://img.shields.io/badge/dialect-C%2B%2B11-blue)](https://en.cppreference.com/w/cpp/11)
+[![C++17+](https://img.shields.io/badge/dialect-C%2B%2B17%2B-blue)](https://en.cppreference.com/w/cpp/17)
 
 [![CI: GCC + Clang](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml/badge.svg)](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml)
 
@@ -21,4 +21,4 @@ mq_timedsend_monotonic
 ```
 that accept as timeout parameter **CLOCK_MONOTONIC**. 
 
-Implementation was done using Linux API function ```poll()```
+Implementation was done using ```poll()```.
