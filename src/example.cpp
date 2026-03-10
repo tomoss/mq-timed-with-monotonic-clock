@@ -2,6 +2,8 @@
 #include <mqueue.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <array>
 #include <atomic>
 #include <cerrno>
 #include <chrono>
@@ -13,7 +15,6 @@
 #include <sstream>
 #include <string>
 #include <thread>
-#include <array>
 
 #include "mq_monotonic.hpp"
 
@@ -25,11 +26,30 @@ constexpr int TIMEOUT = 5;
 constexpr int MIN_SLEEP_MS = 3000;
 constexpr int MAX_SLEEP_MS = 8000;
 
-std::atomic<bool> running = true;
+std::atomic<bool> running{true};
 
 void signalHandler(int signum) {
-  std::cout << "Interrupt signal (" << signum << ") received.\n";
-  running.store(false);
+  const char msg[] = "Signal received, stopping...\n";
+  // write() is async-signal-safe, unlike std::cout
+  write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+  running.store(false, std::memory_order_relaxed);
+}
+
+bool setupSignalHandlers() {
+  struct sigaction sa {};
+  sa.sa_handler = signalHandler;
+  sigemptyset(&sa.sa_mask);
+  sigaddset(&sa.sa_mask, SIGTERM);
+  sa.sa_flags = SA_RESTART;
+
+  if (sigaction(SIGINT, &sa, nullptr) == -1) return false;
+
+  sigdelset(&sa.sa_mask, SIGTERM);
+  sigaddset(&sa.sa_mask, SIGINT);
+
+  if (sigaction(SIGTERM, &sa, nullptr) == -1) return false;
+
+  return true;
 }
 
 int random_between(int min_ms, int max_ms) {
@@ -78,9 +98,9 @@ void consumer_thread() {
   }
 
   timespec mq_timeout;
-  std::array<char, MAX_MSG_SIZE + 1> buffer; // +1 for safety null terminator
+  std::array<char, MAX_MSG_SIZE + 1> buffer;  // +1 for safety null terminator
 
-  while (running.load()) {
+  while (running.load(std::memory_order_relaxed)) {
     mq_timeout = deadline_after_seconds(TIMEOUT);
     std::cout << printMonotonic() << " Waiting data with timeout: " << TIMEOUT
               << "\n";
@@ -93,8 +113,8 @@ void consumer_thread() {
                 << "\n";
     } else {
       buffer[ret] = '\0';  // Manually null-terminate the received data
-      std::cout << printMonotonic() << " MQ timedreceive data: " << buffer.data()
-                << "\n";
+      std::cout << printMonotonic()
+                << " MQ timedreceive data: " << buffer.data() << "\n";
     }
   }
 }
@@ -117,7 +137,7 @@ void publisher_thread() {
 
   timespec mq_timeout;
 
-  while (running.load()) {
+  while (running.load(std::memory_order_relaxed)) {
     mq_timeout = deadline_after_seconds(TIMEOUT);
 
     std::string message = "I like crispy strips";
@@ -146,8 +166,10 @@ void publisher_thread() {
 int main(int, char**) {
   std::cout << "Example started !\n";
 
-  signal(SIGTERM, signalHandler);
-  signal(SIGINT, signalHandler);
+  if (!setupSignalHandlers()) {
+    std::cerr << "Failed to set up signal handlers\n";
+    return 1;
+  }
 
   std::thread pub_t(publisher_thread);
   std::thread sub_t(consumer_thread);
@@ -158,4 +180,5 @@ int main(int, char**) {
   mq_unlink(QUEUE_NAME);
 
   std::cout << "Example stopped !\n";
+  return 0;
 }
