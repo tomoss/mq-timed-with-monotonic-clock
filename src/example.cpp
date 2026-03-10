@@ -1,20 +1,19 @@
-#include <fcntl.h>
-#include <mqueue.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include <array>
 #include <atomic>
 #include <cerrno>
 #include <chrono>
 #include <csignal>
 #include <cstring>
+#include <fcntl.h>
 #include <iomanip>
 #include <iostream>
+#include <mqueue.h>
 #include <random>
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
 #include <thread>
+#include <unistd.h>
 
 #include "mq_monotonic.hpp"
 
@@ -29,156 +28,144 @@ constexpr int MAX_SLEEP_MS = 8000;
 std::atomic<bool> running{true};
 
 void signalHandler(int signum) {
-  const char msg[] = "Signal received, stopping...\n";
-  // write() is async-signal-safe, unlike std::cout
-  write(STDOUT_FILENO, msg, sizeof(msg) - 1);
-  running.store(false, std::memory_order_relaxed);
+    const char msg[] = "Signal received, stopping...\n";
+    // write() is async-signal-safe, unlike std::cout
+    write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+    running.store(false, std::memory_order_relaxed);
 }
 
 bool setupSignalHandlers() {
-  struct sigaction sa {};
-  sa.sa_handler = signalHandler;
-  sigemptyset(&sa.sa_mask);
-  sigaddset(&sa.sa_mask, SIGTERM);
-  sa.sa_flags = SA_RESTART;
+    struct sigaction sa {};
+    sa.sa_handler = signalHandler;
+    sigemptyset(&sa.sa_mask);
+    sigaddset(&sa.sa_mask, SIGTERM);
+    sa.sa_flags = SA_RESTART;
 
-  if (sigaction(SIGINT, &sa, nullptr) == -1) return false;
+    if (sigaction(SIGINT, &sa, nullptr) == -1)
+        return false;
 
-  sigdelset(&sa.sa_mask, SIGTERM);
-  sigaddset(&sa.sa_mask, SIGINT);
+    sigdelset(&sa.sa_mask, SIGTERM);
+    sigaddset(&sa.sa_mask, SIGINT);
 
-  if (sigaction(SIGTERM, &sa, nullptr) == -1) return false;
+    if (sigaction(SIGTERM, &sa, nullptr) == -1)
+        return false;
 
-  return true;
+    return true;
 }
 
 int random_between(int min_ms, int max_ms) {
-  static thread_local std::mt19937 rng(std::random_device{}());
-  std::uniform_int_distribution<int> dist(min_ms, max_ms);
-  return dist(rng);
+    static thread_local std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> dist(min_ms, max_ms);
+    return dist(rng);
 }
 
 std::string printMonotonic() {
-  struct timespec time;
-  clock_gettime(CLOCK_MONOTONIC, &time);
+    struct timespec time;
+    clock_gettime(CLOCK_MONOTONIC, &time);
 
-  std::ostringstream oss;
-  // Format: [   123.456789000]
-  // Fixed width (setw) ensures logs align perfectly even as time grows
-  oss << "[" << std::setw(10) << std::setfill(' ')
-      << time.tv_sec  // Seconds (padding spaces)
-      << "." << std::setw(9) << std::setfill('0')
-      << time.tv_nsec  // Nanoseconds (padding zeros)
-      << "]";
+    std::ostringstream oss;
+    // Format: [   123.456789000]
+    // Fixed width (setw) ensures logs align perfectly even as time grows
+    oss << "[" << std::setw(10) << std::setfill(' ') << time.tv_sec // Seconds (padding spaces)
+        << "." << std::setw(9) << std::setfill('0') << time.tv_nsec // Nanoseconds (padding zeros)
+        << "]";
 
-  return oss.str();
+    return oss.str();
 }
 
 timespec deadline_after_seconds(int sec) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += sec;
-  return ts;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    ts.tv_sec += sec;
+    return ts;
 }
 
 void consumer_thread() {
-  mqd_t mqd;
+    mqd_t mqd;
 
-  while (running.load()) {
-    mqd = mq_open(QUEUE_NAME, O_RDONLY);
-    if (mqd != -1) {
-      break;
-    } else if (errno == ENOENT) {
-      std::cout << "Waiting for queue creation...\n";
-      sleep(1);
-    } else {
-      perror("mq_open consumer");
-      return;
+    while (running.load()) {
+        mqd = mq_open(QUEUE_NAME, O_RDONLY);
+        if (mqd != -1) {
+            break;
+        } else if (errno == ENOENT) {
+            std::cout << "Waiting for queue creation...\n";
+            sleep(1);
+        } else {
+            perror("mq_open consumer");
+            return;
+        }
     }
-  }
 
-  timespec mq_timeout;
-  std::array<char, MAX_MSG_SIZE + 1> buffer;  // +1 for safety null terminator
+    timespec mq_timeout;
+    std::array<char, MAX_MSG_SIZE + 1> buffer; // +1 for safety null terminator
 
-  while (running.load(std::memory_order_relaxed)) {
-    mq_timeout = deadline_after_seconds(TIMEOUT);
-    std::cout << printMonotonic() << " Waiting data with timeout: " << TIMEOUT
-              << "\n";
-    ssize_t ret = mq_monotonic::mq_timedreceive_monotonic(
-        mqd, buffer.data(), buffer.size(), NULL, &mq_timeout);
+    while (running.load(std::memory_order_relaxed)) {
+        mq_timeout = deadline_after_seconds(TIMEOUT);
+        std::cout << printMonotonic() << " Waiting data with timeout: " << TIMEOUT << "\n";
+        ssize_t ret = mq_monotonic::mq_timedreceive_monotonic(mqd, buffer.data(), buffer.size(), NULL, &mq_timeout);
 
-    if (ret < 0) {
-      std::cout << printMonotonic()
-                << " MQ timedreceive error or timeout: " << std::strerror(errno)
-                << "\n";
-    } else {
-      buffer[ret] = '\0';  // Manually null-terminate the received data
-      std::cout << printMonotonic()
-                << " MQ timedreceive data: " << buffer.data() << "\n";
+        if (ret < 0) {
+            std::cout << printMonotonic() << " MQ timedreceive error or timeout: " << std::strerror(errno) << "\n";
+        } else {
+            buffer[ret] = '\0'; // Manually null-terminate the received data
+            std::cout << printMonotonic() << " MQ timedreceive data: " << buffer.data() << "\n";
+        }
     }
-  }
 }
 
 void publisher_thread() {
-  struct mq_attr attr;
-  attr.mq_flags = 0;
-  attr.mq_maxmsg = MAX_MESSAGES;
-  attr.mq_msgsize = MAX_MSG_SIZE;
-  attr.mq_curmsgs = 0;
+    struct mq_attr attr;
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = MAX_MESSAGES;
+    attr.mq_msgsize = MAX_MSG_SIZE;
+    attr.mq_curmsgs = 0;
 
-  /* Create and open a message queue for writing */
-  mqd_t mqd =
-      mq_open(QUEUE_NAME, (O_WRONLY | O_CREAT), (S_IRUSR | S_IWUSR), &attr);
+    /* Create and open a message queue for writing */
+    mqd_t mqd = mq_open(QUEUE_NAME, (O_WRONLY | O_CREAT), (S_IRUSR | S_IWUSR), &attr);
 
-  if (mqd == -1) {
-    perror("mq_open publisher");
-    return;
-  }
-
-  timespec mq_timeout;
-
-  while (running.load(std::memory_order_relaxed)) {
-    mq_timeout = deadline_after_seconds(TIMEOUT);
-
-    std::string message = "I like crispy strips";
-    std::cout << printMonotonic()
-              << " Sending for data with timeout: " << TIMEOUT << "\n";
-    int ret = mq_monotonic::mq_timedsend_monotonic(
-        mqd, message.c_str(), message.size(), MSG_PRIO, &mq_timeout);
-    if (ret < 0) {
-      std::cout << printMonotonic()
-                << " MQ timedsend error or timeout: " << std::strerror(errno)
-                << "\n";
-    } else {
-      std::cout << printMonotonic()
-                << " MQ timedsend succesfully sent the data\n";
+    if (mqd == -1) {
+        perror("mq_open publisher");
+        return;
     }
 
-    int sleep_time_ms = random_between(MIN_SLEEP_MS, MAX_SLEEP_MS);
-    std::cout << printMonotonic() << " Publisher thread sleep for "
-              << sleep_time_ms << "ms\n";
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time_ms));
-  }
+    timespec mq_timeout;
 
-  mq_close(mqd);
+    while (running.load(std::memory_order_relaxed)) {
+        mq_timeout = deadline_after_seconds(TIMEOUT);
+
+        std::string message = "I like crispy strips";
+        std::cout << printMonotonic() << " Sending for data with timeout: " << TIMEOUT << "\n";
+        int ret = mq_monotonic::mq_timedsend_monotonic(mqd, message.c_str(), message.size(), MSG_PRIO, &mq_timeout);
+        if (ret < 0) {
+            std::cout << printMonotonic() << " MQ timedsend error or timeout: " << std::strerror(errno) << "\n";
+        } else {
+            std::cout << printMonotonic() << " MQ timedsend succesfully sent the data\n";
+        }
+
+        int sleep_time_ms = random_between(MIN_SLEEP_MS, MAX_SLEEP_MS);
+        std::cout << printMonotonic() << " Publisher thread sleep for " << sleep_time_ms << "ms\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time_ms));
+    }
+
+    mq_close(mqd);
 }
 
 int main(int, char**) {
-  std::cout << "Example started !\n";
+    std::cout << "Example started !\n";
 
-  if (!setupSignalHandlers()) {
-    std::cerr << "Failed to set up signal handlers\n";
-    return 1;
-  }
+    if (!setupSignalHandlers()) {
+        std::cerr << "Failed to set up signal handlers\n";
+        return 1;
+    }
 
-  std::thread pub_t(publisher_thread);
-  std::thread sub_t(consumer_thread);
+    std::thread pub_t(publisher_thread);
+    std::thread sub_t(consumer_thread);
 
-  pub_t.join();
-  sub_t.join();
+    pub_t.join();
+    sub_t.join();
 
-  mq_unlink(QUEUE_NAME);
+    mq_unlink(QUEUE_NAME);
 
-  std::cout << "Example stopped !\n";
-  return 0;
+    std::cout << "Example stopped !\n";
+    return 0;
 }
