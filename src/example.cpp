@@ -27,7 +27,7 @@ constexpr int MAX_SLEEP_MS = 8000;
 
 std::atomic<bool> running{true};
 
-void signalHandler(int signum) {
+void signalHandler(int) {
     const char msg[] = "Signal received, stopping...\n";
     // write() is async-signal-safe, unlike std::cout
     write(STDOUT_FILENO, msg, sizeof(msg) - 1);
@@ -107,7 +107,7 @@ void consumer_thread() {
         if (ret < 0) {
             std::cout << printMonotonic() << " MQ timedreceive error or timeout: " << std::strerror(errno) << "\n";
         } else {
-            buffer[ret] = '\0'; // Manually null-terminate the received data
+            buffer[static_cast<size_t>(ret)] = '\0'; // Manually null-terminate the received data
             std::cout << printMonotonic() << " MQ timedreceive data: " << buffer.data() << "\n";
         }
     }

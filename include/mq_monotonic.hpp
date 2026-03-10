@@ -129,7 +129,7 @@ inline int mq_timedsend_monotonic(mqd_t mqdes, const char* msg_ptr, size_t msg_l
 
     // Non-blocking probe using zero timeout.
     timespec zero_timeout = {0, 0};
-    ssize_t ret;
+    int ret;
 
     for (;;) {
         errno = 0;

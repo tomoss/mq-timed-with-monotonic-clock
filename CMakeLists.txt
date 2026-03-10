@@ -21,6 +21,9 @@ option(BUILD_TESTS "Build unit tests" ON)
 if(BUILD_EXAMPLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/example.cpp")
     add_executable(mq_monotonic_example src/example.cpp)
     target_link_libraries(mq_monotonic_example PRIVATE mq_monotonic)
+    target_compile_options(mq_monotonic_example PRIVATE
+        -Wall -Wextra -Werror -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnull-dereference
+    )
 endif()
 
 if(BUILD_TESTS)
