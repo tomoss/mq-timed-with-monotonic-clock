@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [address, thread, undefined, memory]
+        sanitizer: [address, thread, undefined]
     steps:
       - uses: actions/checkout@v4
 

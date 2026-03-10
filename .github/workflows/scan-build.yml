@@ -1,0 +1,40 @@
+name: Static Analysis CI
+
+on:
+  push:
+    branches: [ "main"]
+  pull_request:
+    branches: [ "main"]
+
+jobs:
+  scan-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes -qq ninja-build clang clang-tools libboost-test-dev
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_STANDARD=17
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DCMAKE_CXX_EXTENSIONS=OFF
+          -DBUILD_EXAMPLE=ON
+          -DBUILD_TESTS=ON
+
+      - name: Run scan-build
+        run: scan-build --status-bugs cmake --build build
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-build-report
+          path: /tmp/scan-build-*
+          retention-days: 7
