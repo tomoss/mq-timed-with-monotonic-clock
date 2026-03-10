@@ -1,4 +1,4 @@
-name: Linux CI
+name: Build CI
 
 on:
   push:
@@ -51,7 +51,7 @@ jobs:
             ninja-build \
             cmake \
             build-essential \
-            libboost-dev
+            libboost-test-dev
 
       # -----------------------------
       # Configure
