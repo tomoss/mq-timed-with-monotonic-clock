@@ -1,4 +1,4 @@
-name: Static Analysis CI
+name: Static Analysis
 
 on:
   push:
@@ -31,10 +31,26 @@ jobs:
       - name: Run scan-build
         run: scan-build --status-bugs cmake --build build
 
-      - name: Upload report
+      - name: Upload scan-build report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: scan-build-report
           path: /tmp/scan-build-*
           retention-days: 7
+
+  cppcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes -qq cppcheck
+
+      - name: Run cppcheck
+        run: >
+          cppcheck --enable=all --error-exitcode=1
+          --suppress=missingIncludeSystem
+          -I include src tests
