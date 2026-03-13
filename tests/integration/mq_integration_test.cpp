@@ -82,7 +82,7 @@ int run_integration_test(clockid_t p_clock_id) {
     return l_result;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* const argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <realtime|monotonic>\n";
         return 1;
