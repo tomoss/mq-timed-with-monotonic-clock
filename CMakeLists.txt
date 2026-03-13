@@ -9,14 +9,15 @@ target_include_directories(mq_monotonic INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_features(mq_monotonic INTERFACE cxx_std_17)
+target_compile_features(mq_monotonic INTERFACE cxx_std_23)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(mq_monotonic INTERFACE rt)
 endif()
 
 option(BUILD_EXAMPLE "Build example program" ON)
-option(BUILD_TESTS "Build unit tests" ON)
+option(BUILD_UNIT_TESTS "Build unit tests" ON)
+option(BUILD_INTEGRATION_TESTS "Build integration tests" ON)
 
 if(BUILD_EXAMPLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/example.cpp")
     add_executable(mq_monotonic_example src/example.cpp)
@@ -26,10 +27,14 @@ if(BUILD_EXAMPLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/example.cpp")
     )
 endif()
 
-if(BUILD_TESTS)
+if(BUILD_UNIT_TESTS)
     include(CTest)
     enable_testing()
-    add_subdirectory(tests)
+    add_subdirectory(tests/unit)
+endif()
+
+if(BUILD_INTEGRATION_TESTS)
+    add_subdirectory(tests/integration)
 endif()
 
 include(GNUInstallDirs)
