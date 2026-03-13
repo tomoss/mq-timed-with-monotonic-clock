@@ -2,9 +2,24 @@ name: Static Analysis
 
 on:
   push:
-    branches: [ "main"]
+    branches:
+      - main
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/static-analysisyml'
+
   pull_request:
-    branches: [ "main"]
+    branches:
+      - main
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/static-analysis.yml'
 
 jobs:
   scan-build:
@@ -22,11 +37,11 @@ jobs:
           cmake -S . -B build -G Ninja
           -DCMAKE_CXX_COMPILER=clang++
           -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD=17
           -DCMAKE_CXX_STANDARD_REQUIRED=ON
           -DCMAKE_CXX_EXTENSIONS=OFF
           -DBUILD_EXAMPLE=ON
-          -DBUILD_TESTS=ON
+          -DBUILD_UNIT_TESTS=ON
 
       - name: Run scan-build
         run: scan-build --status-bugs cmake --build build

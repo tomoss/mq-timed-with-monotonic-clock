@@ -2,9 +2,24 @@ name: Build CI
 
 on:
   push:
-    branches: [ "main"]
+    branches:
+      - main
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
+
   pull_request:
-    branches: [ "main"]
+    branches:
+      - main
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
 
 jobs:
   build:
@@ -62,11 +77,12 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.compiler.c }}
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD=17
           -DCMAKE_CXX_STANDARD_REQUIRED=ON
           -DCMAKE_CXX_EXTENSIONS=OFF
           -DBUILD_EXAMPLE=ON
-          -DBUILD_TESTS=ON
+          -DBUILD_UNIT_TESTS=ON
+          -DBUILD_INTEGRATION_TESTS = OFF
 
       # -----------------------------
       # Build
