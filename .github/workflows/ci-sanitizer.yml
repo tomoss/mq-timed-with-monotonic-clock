@@ -44,6 +44,7 @@ jobs:
           -DCMAKE_CXX_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=${{ matrix.sanitizer }}"
           -DBUILD_UNIT_TESTS=ON
+          -DBUILD_INTEGRATION_TESTS=OFF
 
       - name: Build
         run: cmake --build build

@@ -42,6 +42,7 @@ jobs:
           -DCMAKE_CXX_EXTENSIONS=OFF
           -DBUILD_EXAMPLE=ON
           -DBUILD_UNIT_TESTS=ON
+          -DBUILD_INTEGRATION_TESTS=OFF
 
       - name: Run scan-build
         run: scan-build --status-bugs cmake --build build
