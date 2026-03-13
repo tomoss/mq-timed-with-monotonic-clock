@@ -2,7 +2,7 @@
 
 [![C++17+](https://img.shields.io/badge/dialect-C%2B%2B17%2B-blue)](https://en.cppreference.com/w/cpp/17)
 
-[![CI: GCC + Clang](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml/badge.svg)](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml)
+[![Build CI](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/tomoss/mq-timed-with-monotonic-clock/actions/workflows/build.yml)
 
 ![platform Linux x86_64](https://img.shields.io/badge/platform-Linux%20x86_64--bit-yellow)
 ![platform Linux ARM](https://img.shields.io/badge/platform-Linux%20ARM-yellow)
