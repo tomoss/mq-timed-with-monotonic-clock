@@ -7,8 +7,11 @@ on:
     paths:
       - 'include/**'
       - 'src/**'
-      - 'tests/**'
+      - 'tests/**/*.cpp'
+      - 'tests/**/*.hpp'
+      - 'tests/**/*.h'
       - 'CMakeLists.txt'
+      - 'tests/**/CMakeLists.txt'
       - '.github/workflows/ci-sanitizer.yml'
 
   pull_request:
@@ -17,10 +20,12 @@ on:
     paths:
       - 'include/**'
       - 'src/**'
-      - 'tests/**'
+      - 'tests/**/*.cpp'
+      - 'tests/**/*.hpp'
+      - 'tests/**/*.h'
       - 'CMakeLists.txt'
+      - 'tests/**/CMakeLists.txt'
       - '.github/workflows/ci-sanitizer.yml'
-
 jobs:
   sanitizers:
     runs-on: ubuntu-24.04

@@ -7,9 +7,12 @@ on:
     paths:
       - 'include/**'
       - 'src/**'
-      - 'tests/**'
+      - 'tests/**/*.cpp'
+      - 'tests/**/*.hpp'
+      - 'tests/**/*.h'
       - 'CMakeLists.txt'
-      - '.github/workflows/static-analysisyml'
+      - 'tests/**/CMakeLists.txt'
+      - '.github/workflows/static-analysis.yml'
 
   pull_request:
     branches:
@@ -17,8 +20,11 @@ on:
     paths:
       - 'include/**'
       - 'src/**'
-      - 'tests/**'
+      - 'tests/**/*.cpp'
+      - 'tests/**/*.hpp'
+      - 'tests/**/*.h'
       - 'CMakeLists.txt'
+      - 'tests/**/CMakeLists.txt'
       - '.github/workflows/static-analysis.yml'
 
 jobs:
