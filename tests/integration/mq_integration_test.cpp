@@ -6,10 +6,11 @@
 #include <ctime>
 #include <expected>
 #include <iostream>
+#include <unistd.h>
 
 using mq_monotonic::mq_timedreceive_monotonic;
 
-constexpr const char* QUEUE_NAME = "/mq-test-integration";
+constexpr const char* QUEUE_BASE_NAME = "/mq-test";
 constexpr long MAX_MESSAGES = 10;
 constexpr long MAX_MSG_SIZE = 32;
 constexpr int TIMEOUT = 10;
@@ -35,8 +36,10 @@ int run_integration_test(clockid_t p_clock_id) {
     int l_result = 0;
     mqd_t l_mqd = -1;
 
+    const std::string l_queue_name = QUEUE_BASE_NAME + std::to_string(getpid());
+
     do {
-        l_mqd = mq_open(QUEUE_NAME, O_RDONLY | O_CREAT | O_EXCL, 0644, &l_attr);
+        l_mqd = mq_open(l_queue_name.c_str(), O_RDONLY | O_CREAT | O_EXCL, 0644, &l_attr);
         if (l_mqd == -1) {
             std::cout << "Failed to open queue: " << strerror(errno) << "\n";
             l_result = 1; // failure
@@ -77,28 +80,28 @@ int run_integration_test(clockid_t p_clock_id) {
     if (l_mqd != -1) {
         mq_close(l_mqd);
     }
-    mq_unlink(QUEUE_NAME);
+    mq_unlink(l_queue_name.c_str());
 
     return l_result;
 }
 
 int main(int argc, const char* const argv[]) {
     if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <realtime|monotonic>\n";
+        std::cerr << "Usage: " << argv[0] << " <queue_realtime|queue_monotonic>\n";
         return 1;
     }
 
     const std::string mode = argv[1];
-    if (mode != "realtime" && mode != "monotonic") {
-        std::cerr << "Invalid mode. Use: realtime or monotonic\n";
+    if (mode != "queue_realtime" && mode != "queue_monotonic") {
+        std::cerr << "Invalid mode. Use: queue_realtime or queue_monotonic\n";
         return 1;
     }
 
-    if (mode == "realtime") {
+    if (mode == "queue_realtime") {
         return run_integration_test<&mq_timedreceive>(CLOCK_REALTIME);
     }
 
-    if (mode == "monotonic") {
+    if (mode == "queue_monotonic") {
         return run_integration_test<&mq_timedreceive_monotonic>(CLOCK_MONOTONIC);
     }
 
