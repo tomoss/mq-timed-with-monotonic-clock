@@ -33,24 +33,55 @@ def set_ntp(enabled: bool) -> None:
 
 def start_child(binary: Path, mode: Mode) -> subprocess.Popen:
     return subprocess.Popen(
-        [str(binary), mode],
+        [str(binary), mode.value],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )
 
-def wait_child(proc: subprocess.Popen, mode: Mode, timeout: int) -> ProcessResult:
+def wait_child(proc: subprocess.Popen, timeout: int) -> ProcessResult:
     stdout, stderr = proc.communicate(timeout=timeout)
-
-    print(f"\n=== {mode.value} process stdout ===\n")
-    print(stdout)
-    print("======================")
 
     return ProcessResult(
         returncode=proc.returncode,
         stdout=stdout,
         stderr=stderr,
     )
+
+def print_process_result(result: ProcessResult, mode: Mode) -> None:
+    print(f"\n=== {mode.value} ===\n")
+    print(result.stdout)
+    if result.stderr:
+        print("======================")
+        print(f"\n{mode.value} process stderr:\n{result.stderr}")
+        print("======================")
+    print(f"{mode.value} process exit code: {result.returncode}")
+    print("\n======================")
+
+def assert_process_success(result: ProcessResult, mode: Mode) -> None:
+    if result.returncode != 0:
+        raise AssertionError(f"{mode.value} process failed")
+
+def assert_expected_timing(monotonic_elapsed: float, realtime_elapsed: float) -> None:
+    if monotonic_elapsed > TIMEOUT_SECONDS + 3:
+        raise AssertionError(
+            f"mq_timedreceive_monotonic should stay near {TIMEOUT_SECONDS}s, got {monotonic_elapsed:.2f}s"
+        )
+
+    if realtime_elapsed < TIMEOUT_SECONDS + 5:
+        raise AssertionError(
+            f"mq_timedreceive should be noticeably extended, got {realtime_elapsed:.2f}s"
+        )
+
+    if realtime_elapsed <= monotonic_elapsed:
+        raise AssertionError(
+            "expected mq_timedreceive to be affected more than mq_timedreceive_monotonic"
+        )
+
+    print(f"\nPASS: {Mode.MONOTONIC.value} process was not affected by system time change, {Mode.REALTIME.value} was.")
+    print(f"{Mode.REALTIME.value} set timeout: {TIMEOUT_SECONDS}, actual elapsed: {realtime_elapsed:.2f}s")
+    print(f"{Mode.MONOTONIC.value} set timeout: {TIMEOUT_SECONDS}, actual elapsed: {monotonic_elapsed:.2f}s")
+
 
 def main() -> int:
     script_dir = Path(__file__).resolve().parent
@@ -64,6 +95,10 @@ def main() -> int:
     original_time = get_current_time_str()
     print(f"Original system time: {original_time}")
 
+    ntp_disabled = False
+    monotonic_proc = None
+    realtime_proc = None
+
     try:
         print("Disabling NTP...")
         set_ntp(False)
@@ -71,11 +106,11 @@ def main() -> int:
 
         print("Starting process with mq_timedreceive...")
         realtime_start = time.monotonic()
-        realtime_proc = start_child(binary, "queue_realtime")
+        realtime_proc = start_child(binary, Mode.REALTIME)
 
         print("Starting process with mq_timedreceive_monotonic...")
         monotonic_start = time.monotonic()
-        monotonic_proc = start_child(binary, "queue_monotonic")
+        monotonic_proc = start_child(binary, Mode.MONOTONIC)
 
         # Give both processes time to create the queue and block in receive.
         time.sleep(START_DELAY_SECONDS)
@@ -92,46 +127,25 @@ def main() -> int:
 
         print(f"\nWaiting for child processes...")
 
-        monotonic_result: ProcessResult = wait_child(
-            monotonic_proc, Mode.MONOTONIC, child_timeout
-        )
+        # Sequential waiting is acceptable here because both child processes are already running,
+        # and elapsed time is measured from each process start, not from when communicate() begins.
+        monotonic_result: ProcessResult = wait_child(monotonic_proc, child_timeout)
         monotonic_elapsed = time.monotonic() - monotonic_start
 
-        realtime_result: ProcessResult = wait_child(
-            realtime_proc, Mode.REALTIME, child_timeout
-        )
-
+        realtime_result: ProcessResult = wait_child(realtime_proc, child_timeout)
         realtime_elapsed = time.monotonic() - realtime_start
 
-        print(f"\nmq_timedreceive_monotonic process exit code: {monotonic_result.returncode}")
-        print(f"mq_timedreceive process exit code : {realtime_result.returncode}")
-        print(f"mq_timedreceive_monotonic process elapsed : {monotonic_elapsed:.2f}s")
-        print(f"mq_timedreceive process elapsed  : {realtime_elapsed:.2f}s")
+        for processResult, mode in (
+            (monotonic_result, Mode.MONOTONIC),
+            (realtime_result, Mode.REALTIME),
+        ):
+            print_process_result(processResult, mode)
 
-        if monotonic_result.returncode != 0:
-            raise AssertionError("mq_timedreceive_monotonic process failed")
+        assert_process_success(monotonic_result, Mode.MONOTONIC)
+        assert_process_success(realtime_result, Mode.REALTIME)
 
-        if realtime_result.returncode != 0:
-            raise AssertionError("mq_timedreceive process failed")
+        assert_expected_timing(monotonic_elapsed, realtime_elapsed)
 
-        if monotonic_elapsed > TIMEOUT_SECONDS + 3:
-            raise AssertionError(
-                f"mq_timedreceive_monotonic should stay near {TIMEOUT_SECONDS}s, got {monotonic_elapsed:.2f}s"
-            )
-
-        if realtime_elapsed < TIMEOUT_SECONDS + 5:
-            raise AssertionError(
-                f"mq_timedreceive should be noticeably extended, got {realtime_elapsed:.2f}s"
-            )
-
-        if realtime_elapsed <= monotonic_elapsed:
-            raise AssertionError(
-                "expected mq_timedreceive to be affected more than mq_timedreceive_monotonic"
-            )
-
-        print("\nPASS: mq_timedreceive_monotonic process was not affected by system time change, mq_timedreceive was.")
-        print(f"mq_timedreceive set timeout: {TIMEOUT_SECONDS}, actual elapsed: {realtime_elapsed:.2f}s")
-        print(f"mq_timedreceive_monotonic set timeout: {TIMEOUT_SECONDS}, actual elapsed: {monotonic_elapsed:.2f}s")
         return 0
 
     finally:

@@ -87,21 +87,21 @@ int run_integration_test(clockid_t p_clock_id) {
 
 int main(int argc, const char* const argv[]) {
     if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <queue_realtime|queue_monotonic>\n";
+        std::cerr << "Usage: " << argv[0] << " <mq_timedreceive|mq_timedreceive_monotonic>\n";
         return 1;
     }
 
     const std::string mode = argv[1];
-    if (mode != "queue_realtime" && mode != "queue_monotonic") {
-        std::cerr << "Invalid mode. Use: queue_realtime or queue_monotonic\n";
+    if (mode != "mq_timedreceive" && mode != "mq_timedreceive_monotonic") {
+        std::cerr << "Invalid mode. Use: mq_timedreceive or mq_timedreceive_monotonic\n";
         return 1;
     }
 
-    if (mode == "queue_realtime") {
+    if (mode == "mq_timedreceive") {
         return run_integration_test<&mq_timedreceive>(CLOCK_REALTIME);
     }
 
-    if (mode == "queue_monotonic") {
+    if (mode == "mq_timedreceive_monotonic") {
         return run_integration_test<&mq_timedreceive_monotonic>(CLOCK_MONOTONIC);
     }
 
