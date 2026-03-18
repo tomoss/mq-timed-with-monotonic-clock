@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED)
+find_package(Boost CONFIG REQUIRED)
 
 add_executable(mq_monotonic_unit_tests
     test_main.cpp
@@ -14,7 +14,7 @@ target_link_libraries(mq_monotonic_unit_tests
 
 target_include_directories(mq_monotonic_unit_tests
     PRIVATE
-    ${Boost_INCLUDE_DIRS}
+    Boost::headers
 )
 
 add_test(NAME mq_monotonic_unit_tests COMMAND mq_monotonic_unit_tests)
