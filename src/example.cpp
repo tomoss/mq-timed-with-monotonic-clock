@@ -88,10 +88,10 @@ void consumer_thread() {
         if (l_mqd != -1) {
             break;
         } else if (errno == ENOENT) {
-            std::cout << "Waiting for queue creation...\n";
+            std::cout << "Waiting for queue creation..." << std::endl;
             sleep(1);
         } else {
-            std::cout << "Error opening queue: " << std::strerror(errno) << "\n";
+            std::cout << "Error opening queue: " << std::strerror(errno) << std::endl;
             return;
         }
     }
@@ -101,14 +101,14 @@ void consumer_thread() {
 
     while (g_running.load(std::memory_order_relaxed)) {
         l_mq_timeout = deadline_after_seconds(TIMEOUT);
-        std::cout << print_mono_time() << " Waiting data with timeout: " << TIMEOUT << "\n";
+        std::cout << print_mono_time() << " Waiting data with timeout: " << TIMEOUT << std::endl;
         ssize_t l_ret = mq_monotonic::mq_timedreceive_monotonic(l_mqd, l_buffer.data(), l_buffer.size(), nullptr, &l_mq_timeout);
 
         if (l_ret < 0) {
-            std::cout << print_mono_time() << " MQ timedreceive error or timeout: " << std::strerror(errno) << "\n";
+            std::cout << print_mono_time() << " MQ timedreceive error or timeout: " << std::strerror(errno) << std::endl;
         } else {
             l_buffer[static_cast<size_t>(l_ret)] = '\0'; // Manually null-terminate the received data
-            std::cout << print_mono_time() << " MQ timedreceive data: " << l_buffer.data() << "\n";
+            std::cout << print_mono_time() << " MQ timedreceive data: " << l_buffer.data() << std::endl;
         }
     }
 }
@@ -124,7 +124,7 @@ void publisher_thread() {
     mqd_t l_mqd = mq_open(QUEUE_NAME, (O_WRONLY | O_CREAT), (S_IRUSR | S_IWUSR), &l_attr);
 
     if (l_mqd == -1) {
-        std::cout << "Error creating/opening queue: " << std::strerror(errno) << "\n";
+        std::cout << "Error creating/opening queue: " << std::strerror(errno) << std::endl;
         return;
     }
 
@@ -134,16 +134,16 @@ void publisher_thread() {
         l_mq_timeout = deadline_after_seconds(TIMEOUT);
 
         std::string message = "Te nasti, trudesti si mori";
-        std::cout << print_mono_time() << " Sending for data with timeout: " << TIMEOUT << "\n";
+        std::cout << print_mono_time() << " Sending for data with timeout: " << TIMEOUT << std::endl;
         int l_ret = mq_monotonic::mq_timedsend_monotonic(l_mqd, message.c_str(), message.size(), MSG_PRIO, &l_mq_timeout);
         if (l_ret < 0) {
-            std::cout << print_mono_time() << " MQ timedsend error or timeout: " << std::strerror(errno) << "\n";
+            std::cout << print_mono_time() << " MQ timedsend error or timeout: " << std::strerror(errno) << std::endl;
         } else {
-            std::cout << print_mono_time() << " MQ timedsend succesfully sent the data\n";
+            std::cout << print_mono_time() << " MQ timedsend succesfully sent the data" << std::endl;
         }
 
         int l_sleep_time_ms = random_between(MIN_SLEEP_MS, MAX_SLEEP_MS);
-        std::cout << print_mono_time() << " Publisher thread sleep for " << l_sleep_time_ms << "ms\n";
+        std::cout << print_mono_time() << " Publisher thread sleep for " << l_sleep_time_ms << "ms" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(l_sleep_time_ms));
     }
 
@@ -151,10 +151,10 @@ void publisher_thread() {
 }
 
 int main(int, char**) {
-    std::cout << "=== Example started ===\n";
+    std::cout << "=== Example started ===" << std::endl;
 
     if (!setup_signal_handlers()) {
-        std::cerr << "Failed to set up signal handlers\n";
+        std::cerr << "Failed to set up signal handlers" << std::endl;
         return 1;
     }
 
@@ -166,6 +166,6 @@ int main(int, char**) {
 
     mq_unlink(QUEUE_NAME);
 
-    std::cout << "=== Example stopped ===\n";
+    std::cout << "=== Example stopped ===" << std::endl;
     return 0;
 }
